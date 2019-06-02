@@ -1,0 +1,74 @@
+---
+title: "machine_failure"
+author: "Srihari Seshadri"
+date: "June 2, 2019"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+# Import the relevant libraries
+suppressWarnings(library(plyr))
+suppressWarnings(library(tseries))
+suppressWarnings(library(forecast))
+suppressWarnings(library(lmtest))
+suppressWarnings(library(car))
+suppressWarnings(library(arfima))
+suppressWarnings(library(tsibble))
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(zoo))
+```
+
+```{r}
+mf.tsdata <- read.csv("./machine_temperature_system_failure.csv")
+head(mf.tsdata)
+```
+
+```{r}
+plot.ts(mf.tsdata$value)
+```
+
+
+```{r}
+acf(mf.tsdata$value, main="ACF plot")
+```
+
+# Test for stationarity
+
+### KPSS test
+(KPSS) tests are used for testing a null hypothesis that an observable time series is stationary
+```{r}
+kpss.test(mf.tsdata$value)
+```
+
+This indicates that the TS is NOT stationary
+
+### ADF Test
+Test for the null hypothesis of a unit root of a univarate time series x (equivalently, x is a non-stationary time series).
+```{r}
+adf.test(mf.tsdata$value, alternative="stationary", k=10)
+```
+Contradicts KPSS Test. Indicates that the time series IS Stationary
+
+(https://stats.stackexchange.com/a/235916/102752)
+Unit root test: you can't reject H0; KPSS test: reject H0. Both imply that series has unit root.
+
+
+# Test for Seasonality
+
+```{r}
+mf_ma = ts(na.omit(mf.tsdata$value), 
+              frequency=300)
+decomp = stl(mf_ma, s.window="periodic")
+mf.tsdata$value_deseas <- seasadj(decomp)
+plot(decomp)
+
+# Recheck for stationarity
+kpss.test(mf.tsdata$value_deseas)
+
+adf.test(mf.tsdata$value_deseas, alternative="stationary", k=10)
+
+```
+
+
+
