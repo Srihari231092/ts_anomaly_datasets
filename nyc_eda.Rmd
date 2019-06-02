@@ -1,13 +1,13 @@
 ---
-title: "R Notebook"
+title: "NYC EDA"
 output: html_notebook
 ---
 
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 library(dplyr)
 # Import the relevant libraries
-suppressWarnings(library(plyr))
+#suppressWarnings(library(plyr))
 suppressWarnings(library(tseries))
 suppressWarnings(library(forecast))
 suppressWarnings(library(lmtest))
@@ -16,12 +16,19 @@ suppressWarnings(library(lmtest))
 #suppressWarnings(library(tsibble))
 suppressWarnings(library(ggplot2))
 suppressWarnings(library(gridExtra))
-suppressWarnings(library(zoo))
+#suppressWarnings(library(zoo))
 ```
 
-```{r message=FALSE}
+### Have a look at the data
+
+We have 7 months of data, from 2014/07/01 till 2015/01/31.
+
+NOTE : Scale data to bring to manageable levels. 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 nyctaxi.data <- read.csv("./nyc_taxi.csv")
 head(nyctaxi.data)
+tail(nyctaxi.data)
 dim(nyctaxi.data)
 nyctaxi.data$timestamp_dt <- as.POSIXct(nyctaxi.data$timestamp)
 #nyctaxi.data$value_boxcox <- BoxCox(nyctaxi.data$value, lambda = 3.5)
@@ -29,10 +36,26 @@ nyctaxi.data$timestamp_dt <- as.POSIXct(nyctaxi.data$timestamp)
 
 plot1 <- ggplot(nyctaxi.data, aes(x = value)) + geom_histogram() + theme_light()
 plot2 <- ggplot(nyctaxi.data, aes(sample = value)) +  geom_line(mapping=aes(x=timestamp_dt, y=value)) + theme_light()
+grid.arrange(plot1, plot2, nrow=3)
+
+acf(nyctaxi.data$value)
+
+```
+
+Plot the graphs for just one week
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+subsamp <- nyctaxi.data[nyctaxi.data$timestamp_dt < as.POSIXct("2014-07-08 00:00:00"),]
+plot1 <- ggplot(subsamp, aes(x = value)) + geom_histogram() + theme_light()
+plot2 <- ggplot(subsamp, aes(sample = value)) +  geom_line(mapping=aes(x=timestamp_dt, y=value)) + theme_light()
 grid.arrange(plot1, plot2, nrow=2)
 ```
 
-```{r}
+----------
+### Visualise the anomalies
+
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 anomaly_points <- as.POSIXct(c(
   "2014-11-01 19:00:00",
   "2014-11-27 15:30:00",
@@ -43,16 +66,104 @@ anomaly_points <- as.POSIXct(c(
 
 nyctaxi.data$flag_anomaly <- ifelse(nyctaxi.data$timestamp_dt %in% anomaly_points, TRUE, FALSE)
 
-nyctaxi.data %>% filter(timestamp %in% anomaly_points)
+nyctaxi.data %>% filter(timestamp_dt %in% anomaly_points)
 
-ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
+#ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
 
 ggplot() + 
   geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyctaxi.data) + 
-  geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1.5) +
+  geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
   theme_light()
 ```
 
 
+----------
 
+## Tests for Stationarity
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+# Recheck for stationarity
+kpss.test(nyctaxi.data$value)
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+adf.test(nyctaxi.data$value, alternative="stationary", k=10)
+```
+
+The signal is definitely stationary. 
+
+##### Test for Heteroskedasticity and Stationarity
+
+We can use the Phillips–Perron test to test for Stationarity while accounting for heteroskedasticity.
+
+https://en.wikipedia.org/wiki/Phillips%E2%80%93Perron_test
+https://rdrr.io/cran/aTSA/man/pp.test.html
+
+The test is similar to ADF in terms of hypo testing. i.e., it's a unit root test, alternate hypo is stationarity
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+pp.test(nyctaxi.data$value)
+```
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+# Test and compensate for Seasonality and Trend
+
+Frequency is the expected repitition window. 
+
+Trial and error, getting order of Moving Average as 2 months of time, i.e., 24 * 2 * 7
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ma.order <- 24*2*7
+```
+
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+trend_nyc = ma(nyctaxi.data$value, order = ma.order, centre = T)
+
+ggplot() +
+  geom_line(mapping=aes(x=timestamp_dt, y=value), color="black", data=nyctaxi.data) + 
+  geom_line(mapping=aes(x=nyctaxi.data$timestamp_dt, y=trend_nyc), color="red") 
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+
+nyc_ma = ts(na.omit(nyctaxi.data$value), 
+              frequency=ma.order)
+decomp = stl(nyc_ma, s.window="periodic")
+nyctaxi.data$value_deseas <- seasadj(decomp)
+plot(decomp)
+```
+
+Eyeballing the graph -> it seems to be an additive model, i.e., data = seasonal + trend + remainder
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+acf(nyctaxi.data$value_deseas)
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value_deseas), color="black", data=nyctaxi.data) + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), color="grey", alpha=0.5, data=nyctaxi.data) + 
+  geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
+  theme_light()
+  
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+kpss.test(nyctaxi.data$value_deseas)
+
+adf.test(nyctaxi.data$value_deseas, alternative="stationary", k=10)
+
+pp.test(nyctaxi.data$value)
+```
+
+
+-------------
+
+# Modelling the data
 
