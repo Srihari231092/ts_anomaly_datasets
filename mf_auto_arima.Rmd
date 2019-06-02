@@ -19,7 +19,29 @@ suppressWarnings(library(zoo))
 
 ```{r}
 mf.tsdata <- read.csv("./machine_temperature_system_failure.csv")
+mf.tsdata$timestamp_dt <- as.POSIXct(mf.tsdata$timestamp)
+mf.tsdata$value_sqrt <- sqrt(mf.tsdata$value)
 head(mf.tsdata)
+```
+
+
+```{r}
+anomaly_points = c("2013-12-11 06:00:00",
+                   "2013-12-16 17:25:00",
+                   "2014-01-28 13:55:00",
+                   "2014-02-08 14:30:00")
+
+mf.tsdata$flag_anomaly <- ifelse(mf.tsdata$timestamp %in% anomaly_points, TRUE, FALSE)
+
+mf.tsdata %>% filter(timestamp %in% anomaly_points)
+```
+
+### What is tghe distribution of the data? 
+
+```{r}
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value_sqrt), data=mf.tsdata)
+hist(mf.tsdata$value_sqrt)
 ```
 
 
