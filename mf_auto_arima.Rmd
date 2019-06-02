@@ -14,14 +14,19 @@ suppressWarnings(library(lmtest))
 #suppressWarnings(library(arfima))
 #suppressWarnings(library(tsibble))
 suppressWarnings(library(ggplot2))
+suppressWarnings(library(gridExtra))
 suppressWarnings(library(zoo))
 ```
 
-```{r}
+```{r message=FALSE}
 mf.tsdata <- read.csv("./machine_temperature_system_failure.csv")
 mf.tsdata$timestamp_dt <- as.POSIXct(mf.tsdata$timestamp)
-mf.tsdata$value_sqrt <- sqrt(mf.tsdata$value)
-head(mf.tsdata)
+mf.tsdata$value_boxcox <- BoxCox(mf.tsdata$value, lambda = 3.5)
+#head(mf.tsdata)
+
+plot1 <- ggplot(mf.tsdata, aes(x = value_boxcox)) + geom_histogram()
+plot2 <- ggplot(mf.tsdata, aes(sample = value_boxcox)) + stat_qq() + stat_qq_line()
+grid.arrange(plot1, plot2, ncol=2)
 ```
 
 
@@ -41,7 +46,6 @@ mf.tsdata %>% filter(timestamp %in% anomaly_points)
 ```{r}
 ggplot() + 
   geom_line(mapping=aes(x=timestamp_dt, y=value_sqrt), data=mf.tsdata)
-hist(mf.tsdata$value_sqrt)
 ```
 
 

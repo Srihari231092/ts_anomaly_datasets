@@ -1,0 +1,58 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+# Import the relevant libraries
+suppressWarnings(library(plyr))
+suppressWarnings(library(tseries))
+suppressWarnings(library(forecast))
+suppressWarnings(library(lmtest))
+#suppressWarnings(library(car))
+#suppressWarnings(library(arfima))
+#suppressWarnings(library(tsibble))
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(gridExtra))
+suppressWarnings(library(zoo))
+```
+
+```{r message=FALSE}
+nyctaxi.data <- read.csv("./nyc_taxi.csv")
+head(nyctaxi.data)
+dim(nyctaxi.data)
+nyctaxi.data$timestamp_dt <- as.POSIXct(nyctaxi.data$timestamp)
+#nyctaxi.data$value_boxcox <- BoxCox(nyctaxi.data$value, lambda = 3.5)
+#head(nyctaxi.data)
+
+plot1 <- ggplot(nyctaxi.data, aes(x = value)) + geom_histogram() + theme_light()
+plot2 <- ggplot(nyctaxi.data, aes(sample = value)) +  geom_line(mapping=aes(x=timestamp_dt, y=value)) + theme_light()
+grid.arrange(plot1, plot2, nrow=2)
+```
+
+```{r}
+anomaly_points <- as.POSIXct(c(
+  "2014-11-01 19:00:00",
+  "2014-11-27 15:30:00",
+  "2014-12-25 15:00:00",
+  "2015-01-01 01:00:00",
+  "2015-01-27 00:00:00"
+))
+
+nyctaxi.data$flag_anomaly <- ifelse(nyctaxi.data$timestamp_dt %in% anomaly_points, TRUE, FALSE)
+
+nyctaxi.data %>% filter(timestamp %in% anomaly_points)
+
+ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyctaxi.data) + 
+  geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1.5) +
+  theme_light()
+```
+
+
+
+
