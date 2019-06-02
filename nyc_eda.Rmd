@@ -144,11 +144,11 @@ acf(nyctaxi.data$value_deseas)
 ```
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
-ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
+ggsave(filename="taxi_anomalies_2.pdf", w=20, h=5, dpi=500)
 
 ggplot() + 
-  geom_line(mapping=aes(x=timestamp_dt, y=value_deseas), color="black", data=nyctaxi.data) + 
-  geom_line(mapping=aes(x=timestamp_dt, y=value), color="grey", alpha=0.5, data=nyctaxi.data) + 
+  #geom_line(mapping=aes(x=timestamp_dt, y=value_deseas), color="black", data=nyctaxi.data) + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), color="black", alpha=1, data=nyctaxi.data) + 
   geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
   theme_light()
   
