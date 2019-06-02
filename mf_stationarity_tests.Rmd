@@ -70,5 +70,23 @@ adf.test(mf.tsdata$value_deseas, alternative="stationary", k=10)
 
 ```
 
+The results haven't changed. ADF still indicates stationarity
+
+# Test for Heteroskedasticity and STationarity
+
+We can use the Phillips–Perron test to test for Stationarity while accounting for heteroskedasticity.
+
+https://en.wikipedia.org/wiki/Phillips%E2%80%93Perron_test
+https://rdrr.io/cran/aTSA/man/pp.test.html
+
+The test is similar to ADF in terms of hypo testing. i.e., it's a unit root test, alternate hypo is stationarity
+
+```{r}
+pp.test(mf.tsdata$value)
+```
+
+
+The PP test also indicates stationarity. 
+
 
 
