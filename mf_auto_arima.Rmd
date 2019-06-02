@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+# Import the relevant libraries
+suppressWarnings(library(plyr))
+suppressWarnings(library(tseries))
+suppressWarnings(library(forecast))
+suppressWarnings(library(lmtest))
+#suppressWarnings(library(car))
+#suppressWarnings(library(arfima))
+#suppressWarnings(library(tsibble))
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(zoo))
+```
+
+```{r}
+mf.tsdata <- read.csv("./machine_temperature_system_failure.csv")
+head(mf.tsdata)
+```
+
+

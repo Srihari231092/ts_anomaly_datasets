@@ -12,9 +12,9 @@ suppressWarnings(library(plyr))
 suppressWarnings(library(tseries))
 suppressWarnings(library(forecast))
 suppressWarnings(library(lmtest))
-suppressWarnings(library(car))
-suppressWarnings(library(arfima))
-suppressWarnings(library(tsibble))
+#suppressWarnings(library(car))
+#suppressWarnings(library(arfima))
+#suppressWarnings(library(tsibble))
 suppressWarnings(library(ggplot2))
 suppressWarnings(library(zoo))
 ```
@@ -62,12 +62,14 @@ mf_ma = ts(na.omit(mf.tsdata$value),
 decomp = stl(mf_ma, s.window="periodic")
 mf.tsdata$value_deseas <- seasadj(decomp)
 plot(decomp)
-
+```
+```{r}
 # Recheck for stationarity
 kpss.test(mf.tsdata$value_deseas)
+```
 
+```{r}
 adf.test(mf.tsdata$value_deseas, alternative="stationary", k=10)
-
 ```
 
 The results haven't changed. ADF still indicates stationarity
