@@ -68,12 +68,59 @@ nyctaxi.data$flag_anomaly <- ifelse(nyctaxi.data$timestamp_dt %in% anomaly_point
 
 nyctaxi.data %>% filter(timestamp_dt %in% anomaly_points)
 
+
+nyc.anomaly.1 <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-10-28 00:00:00"))&
+                                (nyctaxi.data$timestamp_dt <= as.POSIXct("2014-11-05 00:00:00")),]
+
+nyc.anomaly.2 <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-11-23 00:00:00"))&
+                                (nyctaxi.data$timestamp_dt <= as.POSIXct("2014-11-30 00:00:00")),]
+
+nyc.anomaly.3 <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-12-22 00:00:00"))&
+                                (nyctaxi.data$timestamp_dt <= as.POSIXct("2014-12-28 00:00:00")),]
+
+nyc.anomaly.4 <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-12-28 00:00:00"))&
+                                (nyctaxi.data$timestamp_dt <= as.POSIXct("2015-01-03 00:00:00")),]
+
+nyc.anomaly.5 <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2015-01-24 00:00:00"))&
+                                (nyctaxi.data$timestamp_dt <= as.POSIXct("2015-01-31 00:00:00")),]
+
 #ggsave(filename="taxi_anomalies.pdf", w=20, h=5, dpi=500)
 
 ggplot() + 
   geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyctaxi.data) + 
   geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
   theme_light()
+
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyc.anomaly.1) + 
+  geom_vline(xintercept=as.numeric(anomaly_points[1]), linetype="dotted", color="red", size=1) +
+  theme_light()
+
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyc.anomaly.2) + 
+  geom_vline(xintercept=as.numeric(anomaly_points[2]), linetype="dotted", color="red", size=1) +
+  theme_light()
+
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyc.anomaly.3) + 
+  geom_vline(xintercept=as.numeric(anomaly_points[3]), linetype="dotted", color="red", size=1) +
+  theme_light()
+
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyc.anomaly.4) + 
+  geom_vline(xintercept=as.numeric(anomaly_points[4]), linetype="dotted", color="red", size=1) +
+  theme_light()
+
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value), data=nyc.anomaly.5) + 
+  geom_vline(xintercept=as.numeric(anomaly_points[5]), linetype="dotted", color="red", size=1) +
+  theme_light()
+
 ```
 
 
@@ -166,4 +213,59 @@ pp.test(nyctaxi.data$value)
 -------------
 
 # Modelling the data
+
+Split the data into train and test. 
+
+Out of 7 months of data, we could use 5 months for training [Jul-Nov]
+
+Let's first try and pick up the first anomaly
+
+```{r}
+nyc.subsamp <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-09-01 00:00:00"))&
+                              (nyctaxi.data$timestamp_dt <= as.POSIXct("2014-11-05 00:00:00")),]
+train.data <- nyc.subsamp[nyc.subsamp$timestamp_dt < as.POSIXct("2014-10-28 00:00:00"),]
+test.data <- nyc.subsamp[(nyc.subsamp$timestamp_dt >= as.POSIXct("2014-10-28 00:00:00"))&                          
+                            (nyc.subsamp$timestamp_dt <= as.POSIXct("2014-11-15 00:00:00")),]
+```
+
+Now let’s have a look at the Auto arima model with seasonal flag enabled
+
+```{r}
+train.data.daily.ts = ts(as.numeric(train.data$value), 
+                         start=c(1,1), 
+                         frequency = 24*2*7)
+autoplot(train.data.daily.ts)
+```
+
+NOTE : this takes a while to run
+```{r}
+arima.model.auto <- auto.arima(train.data.daily.ts, seasonal = TRUE)
+```
+
+```{r}
+summary(arima.model.auto)
+
+arima.model.auto.fcast <- forecast(arima.model.auto, h=nrow(test.data))
+plot(arima.model.auto.fcast)
+
+ggplot() + 
+  geom_line(mapping=aes(x=timestamp_dt, y=value, color="ori"), data=test.data) + 
+  geom_line(mapping=aes(x=test.data$timestamp_dt, y=arima.model.auto.fcast$mean, color="pred")) + 
+  geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
+  theme_light()
+
+
+```
+
+Thoughts :
+
+Update the model each week? Clear predictable trend for a particular week 
+
+
+
+
+
+
+
+
 
