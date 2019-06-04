@@ -256,12 +256,15 @@ summary(arima.model.auto)
 
 arima.model.auto.fcast <- forecast(arima.model.auto, h=nrow(test.data))
 plot(arima.model.auto.fcast)
+```
 
+```{r}
 ggplot() + 
   geom_line(mapping=aes(x=timestamp_dt, y=value, color="ori"), data=test.data) + 
   geom_line(mapping=aes(x=test.data$timestamp_dt, y=arima.model.auto.fcast$mean, color="pred")) + 
   geom_vline(xintercept=as.numeric(anomaly_points), linetype="dotted", color="red", size=1) +
   theme_light()
+ggsave(filename="anomaly_1_pred.pdf", w=20, h=5, dpi=500)
 
 
 ```
