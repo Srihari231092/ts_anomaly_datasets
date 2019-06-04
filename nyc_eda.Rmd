@@ -228,6 +228,15 @@ test.data <- nyc.subsamp[(nyc.subsamp$timestamp_dt >= as.POSIXct("2014-10-28 00:
                             (nyc.subsamp$timestamp_dt <= as.POSIXct("2014-11-15 00:00:00")),]
 ```
 
+
+```{r}
+nyc.subsamp.ts = ts(as.numeric(nyc.subsamp$value), 
+                         start=c(1,1), 
+                         frequency = 24*2*7)
+autoplot(nyc.subsamp.ts)
+```
+
+
 Now let’s have a look at the Auto arima model with seasonal flag enabled
 
 ```{r}
@@ -260,6 +269,9 @@ ggplot() +
 Thoughts :
 
 Update the model each week? Clear predictable trend for a particular week 
+
+ToDo : Justify time windows chosen to model pattern
+ToDo : Find appropriate trigger to re-train model. Perhaps increasing cumulative residual error in a window?
 
 
 
