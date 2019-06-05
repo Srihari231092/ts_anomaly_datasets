@@ -223,6 +223,7 @@ Let's first try and pick up the first anomaly
 ```{r}
 nyc.subsamp <- nyctaxi.data[(nyctaxi.data$timestamp_dt > as.POSIXct("2014-09-01 00:00:00"))&
                               (nyctaxi.data$timestamp_dt <= as.POSIXct("2014-11-05 00:00:00")),]
+
 train.data <- nyc.subsamp[nyc.subsamp$timestamp_dt < as.POSIXct("2014-10-28 00:00:00"),]
 test.data <- nyc.subsamp[(nyc.subsamp$timestamp_dt >= as.POSIXct("2014-10-28 00:00:00"))&                          
                             (nyc.subsamp$timestamp_dt <= as.POSIXct("2014-11-15 00:00:00")),]
@@ -236,8 +237,11 @@ nyc.subsamp.ts = ts(as.numeric(nyc.subsamp$value),
 autoplot(nyc.subsamp.ts)
 ```
 
+```{r}
+hist(nyc.subsamp.ts)
+```
 
-Now let’s have a look at the Auto arima model with seasonal flag enabled
+Now let's have a look at the Auto arima model with seasonal flag enabled
 
 ```{r}
 train.data.daily.ts = ts(as.numeric(train.data$value), 
